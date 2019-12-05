@@ -1,0 +1,213 @@
+package GUI;
+
+import java.io.File;
+import java.util.Optional;
+import javafx.scene.input.MouseEvent;
+import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import static javafx.scene.control.Alert.AlertType.INFORMATION;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextInputDialog;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.StackPane;
+import javafx.stage.Stage;
+import uk.ac.sussex.ianw.fp.futoshiki2.Futoshiki;
+
+/**
+ * This is a GUI for the futoshiki game
+ * @author gs366
+ */
+
+
+public class futoshikiFX extends Application {
+
+public static final int DEFAULT_GRIDSIZE = 5;
+public static final int DEFAULT_DIFF = 4;
+    
+    @Override
+    public void start(Stage primaryStage) {
+        
+        int gridSize;
+        int diff;
+        int rCounter = 0;
+        int cCounter= 0;         
+        
+        
+        
+        // user setting the grid size
+        TextInputDialog gSize = new TextInputDialog(String.valueOf(DEFAULT_GRIDSIZE));
+        gSize.setHeaderText("Set the Grid Size");
+        gSize.setContentText("What size would you like the grid?");
+        gSize.showAndWait();
+        gridSize = Integer.parseInt(gSize.getResult());
+        
+        // user setting the difficulty 
+        TextInputDialog difficulty = new TextInputDialog(String.valueOf(DEFAULT_DIFF));
+        difficulty.setHeaderText("Set the Difficulty (Higher the number, higher the difficulty)");
+        difficulty.setContentText("What difficulty would you like?");
+        difficulty.showAndWait();
+        diff = Integer.parseInt(difficulty.getResult());
+        
+        
+        // setting up grid
+        BorderPane root = new BorderPane();
+        GridPane gridP= new GridPane();
+        Futoshiki f = new Futoshiki(gridSize);
+        gridP.setVgap(20);
+        gridP.setHgap(20);
+        f.fillPuzzle(gridSize, diff, diff);
+        
+        // border colour
+        root.setStyle("-fx-border-color: blue;");
+
+        // loop to add data into the buttons on grid
+        for (int i = 0; i < gridSize; i++) {
+              rCounter = 0;
+            for(int j = 0; j < gridSize; j++){
+            
+            Button butt = new Button(String.valueOf(f.getSquare(i, j).getValue()));
+            butt.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>(){
+                @Override public void handle(MouseEvent e) {
+                   int btnNum;
+                    if (butt.getText() == ""){
+                        btnNum = 0;
+                    }
+                    else {
+                        btnNum = Integer.parseInt(butt.getText());
+                    }
+                    Button source = (Button) e.getSource();
+                   
+                    int x = GridPane.getRowIndex(source);
+                    int y = GridPane.getColumnIndex(source);
+                    
+                    if (btnNum < f.gridSize) {
+                        btnNum ++;
+                        butt.setText(Integer.toString(btnNum));
+                        f.setSquare(x, y, btnNum);
+                    }
+                    else {
+                        butt.setText("1");
+                        f.setSquare(x, y, 1);
+                    }
+                
+                }});
+              
+            // adding constraints into the grid
+            Label rowCon = new Label("");
+            Label columnCon = new Label(""); 
+            if ((i == f.gridSize - 1) || (j == f.gridSize - 1)){
+                // do nothing
+            }
+            else{
+                columnCon.setText(f.getColConstraint(i, j));
+                rowCon.setText(f.getRowConstraint(i, j));
+            }
+            
+
+            // making sure constraints can be put into correct position
+            if (cCounter == (f.gridSize * 2)-2){
+                // do  nothing
+            }
+            else { 
+
+                gridP.add(columnCon, rCounter, cCounter+1);
+                gridP.add(rowCon, rCounter+1, cCounter);
+            }
+            
+            
+            gridP.add(butt, rCounter, cCounter);
+            
+            
+            butt.setMinSize(45,45);
+            
+            //diableing and setting buttons
+            if (f.getSquare(i, j).getValue() != 0) {
+                butt.setDisable(true);
+                butt.setStyle("-fx-background-color: #ADD8E6; ");
+            }
+            else { 
+                butt.setText("");
+            }
+            
+            rCounter+=2;
+            } // end of row loop
+        
+           cCounter+=2;
+        } // end of column loop 
+        
+        // making a new game function 
+        Button newG = new Button("New Game!");
+        newG.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>(){
+        @Override public void handle (MouseEvent e){
+            root.getChildren().clear();
+            start(primaryStage);
+        }
+        });
+        
+        
+        // how to play function
+        Button instBtn = new Button("How to Play");
+        instBtn.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>(){
+        @Override public void handle (MouseEvent e){
+            
+        }
+        });
+        
+        // close game function with alert
+        Button closeG = new Button("Close Game");
+        closeG.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler<MouseEvent>(){
+        @Override public void handle (MouseEvent e){
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Leaving");
+        alert.setHeaderText("Thank you for playing! Come back soon.");
+        alert.setContentText("Press OK to exit");
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.get() == ButtonType.OK)
+        {
+            Platform.exit();
+        } 
+        }});
+    
+        //setting button positions and alligments        
+        BorderPane.setAlignment(newG,Pos.TOP_RIGHT);
+        root.setTop(newG);
+        root.setPadding(new Insets(10, 10, 10, 20));
+        
+        BorderPane.setAlignment(closeG,Pos.BOTTOM_RIGHT);
+        root.setBottom(closeG);
+        
+        
+        BorderPane.setAlignment(instBtn,Pos.CENTER_RIGHT);
+        root.setRight(instBtn);
+        
+        
+        
+        gridP.setAlignment(Pos.CENTER);
+        root.setCenter(gridP);
+        Scene scene = new Scene(root, f.gridSize * 150, f.gridSize * 150);
+        
+        
+        primaryStage.setTitle("Futoshiki Game!");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String[] args) {
+        launch(args);
+    }
+    
+}
